@@ -1,3 +1,32 @@
+#
+#	Device Driver
+# Jeroen Elschot & Richard Olthuis
+#
+#
+Module.symvers
+modules.order
+.tmp_versions
+.main.ko.cmd
+main.ko
+main.mod.c
+mani.mod.o
+.main.mod.o.cmd
+main.o
+main.o.cmd
+.frandom.o.cmd
+main.o
+frandom.o
+.main.o.cmd
+.gitignore~
+src/main.mod.c
+src/main.mod.o
+src/main.o
+src/main.ko
+src/.main.ko.cmd
+src/.main.mod.o.cmd
+src/.main.o.cmd
+Makefile~
+
 # Object files
 *.o
 *.ko
