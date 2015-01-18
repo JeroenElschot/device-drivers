@@ -4,15 +4,16 @@
 #include <linux/module.h>
 
 #include <asm/uaccess.h>
-#include "frandom.h"
+#include "randomizer.h"
 
 static int __init
 main_init(void)
 {
 	int reg;
 
-	reg = frandom_init_module();
-
+	printk("Initializing Randomizer...\n");
+	reg = randomizer_init();
+	
 	return reg;
 }
 
@@ -20,7 +21,8 @@ main_init(void)
 static void __exit
 main_exit(void)
 {
-	frandom_cleanup_module();
+	printk("Shutting down Randomizer...\n");
+	randomizer_exit();
 }
 
 module_init(main_init);
@@ -28,7 +30,7 @@ module_exit(main_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jeroen Elschot & Richard Olthuis");
-MODULE_DESCRIPTION("\"Random data generator!\" minimal module");
+MODULE_DESCRIPTION("Random data genarator");
 MODULE_VERSION("dev");
 
 
