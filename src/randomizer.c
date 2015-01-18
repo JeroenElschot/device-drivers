@@ -250,14 +250,14 @@ static ssize_t randomizer_read(struct file *filp, char *buf, size_t count, loff_
 	return ret;
 }
 
-/* the allowed file operations, read, open and release */
 static struct file_operations randomizer_fops = {
 	read:       randomizer_read,
 	open:       randomizer_open,
 	release:    randomizer_release,
 };
 
-void randomizer_cleanup_module(void) {
+void randomizer_exit(void) {
+
 	unregister_chrdev_region(MKDEV(randomizer_major, erandom_minor), 1);
 	cdev_del(&erandom_cdev);
 	device_destroy(randomizer_class, MKDEV(randomizer_major, erandom_minor));
@@ -271,7 +271,7 @@ void randomizer_cleanup_module(void) {
 	kfree(erandom_state);
 }
 
-int randomizer_init_module(void)
+int randomizer_init(void)
 {
 	int result;
     

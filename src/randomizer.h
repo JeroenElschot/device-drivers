@@ -2,9 +2,9 @@
 #define RANDOMIZER_H_
 #include <linux/compiler.h> 
 
-__must_check int randomizer_init_module(void);
+__must_check int randomizer_init(void);
 
-void randomizer_cleanup_module(void); 
+void randomizer_exit(void); 
 
 #endif //RANDOMIZER_H_
 
