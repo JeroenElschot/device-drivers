@@ -1,8 +1,8 @@
-TARGET_MODULE:=frandom
+TARGET_MODULE:=randomizer
 
 # If we running by kernel building system
 ifneq ($(KERNELRELEASE),)
- $(TARGET_MODULE)-objs := src/main.o src/frandom.o
+ $(TARGET_MODULE)-objs := src/main.o src/randomizer.o
  obj-m := $(TARGET_MODULE).o
 
 # If we are running without kernel build system

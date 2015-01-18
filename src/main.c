@@ -4,14 +4,14 @@
 #include <linux/module.h>
 
 #include <asm/uaccess.h>
-#include "frandom.h"
+#include "randomizer.h"
 
 static int __init
 main_init(void)
 {
 	int reg;
 
-	reg = frandom_init_module();
+	reg = randomizer_init_module();
 
 	return reg;
 }
@@ -20,7 +20,7 @@ main_init(void)
 static void __exit
 main_exit(void)
 {
-	frandom_cleanup_module();
+	randomizer_cleanup_module();
 }
 
 module_init(main_init);
