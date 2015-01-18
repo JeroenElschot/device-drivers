@@ -1,5 +1,5 @@
 # Install/removal
-To install enter the command "make". Insert the module by using the command "insmod main.ko". You can remove the module
+To install enter the command "make". Insert the module by using the command "insmod randomizer.ko". You can remove the module
 by entering the command "rmmod main".
 
 # Usage
