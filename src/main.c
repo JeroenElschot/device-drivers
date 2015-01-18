@@ -2,7 +2,6 @@
 #include <linux/init.h>
 #include <linux/miscdevice.h>
 #include <linux/module.h>
-
 #include <asm/uaccess.h>
 #include "randomizer.h"
 

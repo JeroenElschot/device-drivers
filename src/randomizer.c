@@ -1,16 +1,9 @@
 #include "randomizer.h"
 
-#define INTERNAL_SEED 0
-#define EXTERNAL_SEED 1
-
-#define RANDOMIZER_MAJOR 235
-#define RANDOMIZER_MINOR 11 
-#define ERANDOM_MINOR 12 
-
 static int erandom_seeded = 0;
-static int randomizer_major = RANDOMIZER_MAJOR;
-static int randomizer_minor = RANDOMIZER_MINOR;
-static int erandom_minor = ERANDOM_MINOR;
+static int randomizer_major = 235;
+static int randomizer_minor = 11;
+static int erandom_minor = 12;
 static int randomizer_bufsize = 256;
 static int randomizer_chunklimit = 0;
 
@@ -21,17 +14,6 @@ static struct file_operations randomizer_fops;
 
 struct device *randomizer_device;
 struct device *erandom_device;
-
-struct randomizer_state
-{
-	struct semaphore sem;
-
-	u8 S[256];
-	u8 i;        
-	u8 j;
-
-	char *buf;
-};
 
 static struct randomizer_state *erandom_state;
 static inline void switch_bytes(u8 *firstByte, u8 *secondByte)
@@ -104,7 +86,7 @@ static void init_rand_state(struct randomizer_state *state, int seedflag)
 		switch_bytes(&S[i], &S[j]);
 	}
 
-	state->i = i; /* Save state */
+	state->i = i; 
 	state->j = j;
 }
 
@@ -221,51 +203,31 @@ void randomizer_exit(void) {
 int randomizer_init(void)
 {
 	int result;
+	erandom_seeded = 0;
 
 	erandom_state = kmalloc(sizeof(struct randomizer_state), GFP_KERNEL);
 	erandom_state->buf = kmalloc(256, GFP_KERNEL);
 
 	sema_init(&erandom_state->sem, 1);
 
-	erandom_seeded = 0;
-
 	randomizer_class = class_create(THIS_MODULE, "fastrng");
-
 	cdev_init(&randomizer_cdev, &randomizer_fops);
 	randomizer_cdev.owner = THIS_MODULE;
-	
-	if(cdev_add(&randomizer_cdev, MKDEV(randomizer_major, randomizer_minor), 1) != 0){
-		randomizer_exit();
-		return result;
-	}
-
-	if(register_chrdev_region(MKDEV(randomizer_major, randomizer_minor), 1, "/dev/randomizer") != 0){
-		randomizer_exit();
-		return result;
-	}
-
-	if(register_chrdev_region(MKDEV(randomizer_major, randomizer_minor), 1, "/dev/randomizer") != 0){
-		randomizer_exit();
-		return result;
-	}
+	result = cdev_add(&randomizer_cdev, MKDEV(randomizer_major, randomizer_minor), 1);
+	result = register_chrdev_region(MKDEV(randomizer_major, randomizer_minor), 1, "/dev/randomizer");
 
 	randomizer_device = device_create(randomizer_class, NULL, MKDEV(randomizer_major, randomizer_minor), NULL, "randomizer");
-	
 	cdev_init(&erandom_cdev, &randomizer_fops);
 	erandom_cdev.owner = THIS_MODULE;
 	
-	if(cdev_add(&erandom_cdev, MKDEV(randomizer_major, erandom_minor), 1) != 0){
-		randomizer_exit();
-		return result;
-	}
-
-	if(register_chrdev_region(MKDEV(randomizer_major, erandom_minor), 1, "/dev/erandom") != 0){
-		randomizer_exit();
-		return result;
-	}
-
+	result = cdev_add(&erandom_cdev, MKDEV(randomizer_major, erandom_minor), 1);
+	result = register_chrdev_region(MKDEV(randomizer_major, erandom_minor), 1, "/dev/erandom");
 	erandom_device = device_create(randomizer_class, NULL, MKDEV(randomizer_major, erandom_minor), NULL, "erandom");
 
+	if(result != 0){
+		randomizer_exit();
+		return result;
+	}
 	return 0;
 }
 
