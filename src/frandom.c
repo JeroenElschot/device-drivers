@@ -1,19 +1,3 @@
-/*  
-	installation:
-		make this file with the Makefile by typing "make" in the terminal
-		when the build succeeds, type:
-			sudo insmod frandom.ko
-		in the terminal to give the driver to the system for usage
-	usage: 
-		sudo head -c 1m /dev/frandom >> OneMeg.txt
-		this will write 1 megabytes of data to a file named OneMeg.txt
-		!! do not open this file with gedit, that program is too slow to open that size !!
-		sublime is reconmended
-		
-	removal: 
-		sudo rmmod frandom
-*/
-
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -38,15 +22,15 @@
 #define FRANDOM_MINOR 11 
 #define ERANDOM_MINOR 12 
 
-static struct file_operations frandom_fops; /* Values assigned below */
+static struct file_operations frandom_fops;
 
-static int erandom_seeded = 0; /* Internal flag */
+static int erandom_seeded = 0;
 
 static int frandom_major = FRANDOM_MAJOR;
 static int frandom_minor = FRANDOM_MINOR;
 static int erandom_minor = ERANDOM_MINOR;
 static int frandom_bufsize = 256;
-static int frandom_chunklimit = 0; /* =0 means unlimited */
+static int frandom_chunklimit = 0;
 
 static struct cdev frandom_cdev;
 static struct cdev erandom_cdev;
@@ -54,9 +38,6 @@ static struct class *frandom_class;
 struct device *frandom_device;
 struct device *erandom_device;
 
-MODULE_DESCRIPTION("Awesome pseudo-random number generator");
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Eli Billauer, Jeroen Elschot, Richard Olthuis");
 module_param(frandom_major, int, 0); /* for usage in /dev/<thedevicename> as majorn number */
 module_param(frandom_minor, int, 0);
 module_param(erandom_minor, int, 0);
@@ -71,9 +52,9 @@ MODULE_PARM_DESC(frandom_chunklimit,"Limit for read() blocks size. 0 (default) i
 
 struct frandom_state
 {
-	struct semaphore sem; /* Semaphore on the state structure */
+	struct semaphore sem;
 
-	u8 S[256]; /* The state array */
+	u8 S[256];
 	u8 i;        
 	u8 j;
 
@@ -82,8 +63,6 @@ struct frandom_state
 
 static struct frandom_state *erandom_state;
 
-
-/* swaps bytes, *b will become *a */
 static inline void swap_byte(u8 *a, u8 *b)
 {
 	u8 swapByte; 
@@ -95,7 +74,6 @@ static inline void swap_byte(u8 *a, u8 *b)
 
 static void init_rand_state(struct frandom_state *state, int seedflag);
 
-/* generates the numbers with the amount of count */
 void erandom_get_random_bytes(char *buf, size_t count)
 {
 	struct frandom_state *state = erandom_state;
@@ -105,15 +83,6 @@ void erandom_get_random_bytes(char *buf, size_t count)
 	unsigned int j;
 	u8 *S;
 
-  
-	/* If we fail to get the semaphore, we revert to external random data.
-	   Since semaphore blocking is expected to be very rare, and interrupts
-	   during these rare and very short periods of time even less frequent,
-	   we take the better-safe-than-sorry approach, and fill the buffer
-	   some expensive random data, in case the caller wasn't aware of this
-	   possibility, and expects random data anyhow.
-	*/
-
 	if (down_interruptible(&state->sem)) {
 		get_random_bytes(buf, count);
 		return;
@@ -122,11 +91,6 @@ void erandom_get_random_bytes(char *buf, size_t count)
 	printk("\n the count given to erandom get random bytes: %zu", count);
 	printk("\n");
 
-	/* We seed erandom as late as possible, hoping that the kernel's main
-	   RNG is already restored in the boot sequence (not critical, but
-	   better.
-	*/
-	
 	if (!erandom_seeded) {
 		erandom_seeded = 1;
 		init_rand_state(state, EXTERNAL_SEED);
@@ -173,10 +137,6 @@ static void init_rand_state(struct frandom_state *state, int seedflag)
 		swap_byte(&S[i], &S[j]);
 	}
 
-	/* It's considered good practice to discard the first 256 bytes
-	   generated. So we do it:
-	*/
-
 	i=0; j=0;
 	for (k=0; k<256; k++) {
 		i = (i + 1) & 0xff;
@@ -192,7 +152,6 @@ static void init_rand_state(struct frandom_state *state, int seedflag)
 	printk("\n");
 }
 
-/* opens the file  */
 static int frandom_open(struct inode *inode, struct file *filp)
 {
   
@@ -200,9 +159,6 @@ static int frandom_open(struct inode *inode, struct file *filp)
 
 	int num = iminor(inode);
 
-	/* This should never happen, now when the minors are regsitered
-	 * explicitly
-	 */
 	if ((num != frandom_minor) && (num != erandom_minor)) return -ENODEV;
   
 	state = kmalloc(sizeof(struct frandom_state), GFP_KERNEL);
@@ -215,7 +171,7 @@ static int frandom_open(struct inode *inode, struct file *filp)
 		return -ENOMEM;
 	}
 
-	sema_init(&state->sem, 1); /* Init semaphore as a mutex */
+	sema_init(&state->sem, 1);
 
 	if (num == frandom_minor)
 		init_rand_state(state, EXTERNAL_SEED);
@@ -224,11 +180,7 @@ static int frandom_open(struct inode *inode, struct file *filp)
 
 	filp->private_data = state;
 
-
-	printk("\n frandom open success: ");
-	printk("\n");
-
-	return 0; /* Success */
+	return 0;
 }
 
 static int frandom_release(struct inode *inode, struct file *filp)
@@ -238,15 +190,10 @@ static int frandom_release(struct inode *inode, struct file *filp)
 
 	kfree(state->buf);
 	kfree(state);
-  
-
-	printk("\n frandom released success");;
-	printk("\n");
 
 	return 0;
 }
 
-/* reads the random bytes from the buffer witht the size of count */
 static ssize_t frandom_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
 	struct frandom_state *state = filp->private_data;
@@ -264,7 +211,7 @@ static ssize_t frandom_read(struct file *filp, char *buf, size_t count, loff_t *
 	if ((frandom_chunklimit > 0) && (count > frandom_chunklimit))
 		count = frandom_chunklimit;
 
-	ret = count; /* It's either everything or an error... */
+	ret = count;
   
 	i = state->i;     
 	j = state->j;
@@ -300,10 +247,6 @@ static ssize_t frandom_read(struct file *filp, char *buf, size_t count, loff_t *
 
 	up(&state->sem);
 
-
-	printk("\n frandom read success, state: %d", i);
-	printk("\n");
-
 	return ret;
 }
 
@@ -314,7 +257,6 @@ static struct file_operations frandom_fops = {
 	release:    frandom_release,
 };
 
-/* cleans up the module, by destroying and unregistering */
 void frandom_cleanup_module(void) {
 	unregister_chrdev_region(MKDEV(frandom_major, erandom_minor), 1);
 	cdev_del(&erandom_cdev);
@@ -329,16 +271,10 @@ void frandom_cleanup_module(void) {
 	kfree(erandom_state);
 }
 
-/* the initialisation of the module 
-	also prints out all the posible error messages
-*/
 int frandom_init_module(void)
 {
 	int result;
-
-	/* The buffer size MUST be at least 256 bytes, because we assume that
-	   minimal length in init_rand_state().
-	*/       
+    
 	if (frandom_bufsize < 256) {
 		printk(KERN_ERR "frandom: Refused to load because frandom_bufsize=%d < 256\n",frandom_bufsize);
 		return -EINVAL;
@@ -352,15 +288,13 @@ int frandom_init_module(void)
 	if (!erandom_state)
 		return -ENOMEM;
 
-	/* This specific buffer is only used for seeding, so we need
-	   256 bytes exactly */
 	erandom_state->buf = kmalloc(256, GFP_KERNEL);
 	if (!erandom_state->buf) {
 		kfree(erandom_state);
 		return -ENOMEM;
 	}
 
-	sema_init(&erandom_state->sem, 1); /* Init semaphore as a mutex */
+	sema_init(&erandom_state->sem, 1);
 
 	erandom_seeded = 0;
 
@@ -370,12 +304,6 @@ int frandom_init_module(void)
 		printk(KERN_WARNING "frandom: Failed to register class fastrng\n");
 		goto error0;
 	}
-	
-	/*
-	 * Register your major, and accept a dynamic number. This is the
-	 * first thing to do, in order to avoid releasing other module's
-	 * fops in frandom_cleanup_module()
-	 */
 
 	cdev_init(&frandom_cdev, &frandom_fops);
 	frandom_cdev.owner = THIS_MODULE;
@@ -418,7 +346,7 @@ int frandom_init_module(void)
 		printk(KERN_WARNING "frandom: Failed to create erandom device\n");
 		goto error6;
 	}
-	return 0; /* succeed */
+	return 0;
 
  error6:
 	unregister_chrdev_region(MKDEV(frandom_major, erandom_minor), 1);

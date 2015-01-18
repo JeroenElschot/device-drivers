@@ -1,4 +1,4 @@
-TARGET_MODULE:=main
+TARGET_MODULE:=frandom
 
 # If we running by kernel building system
 ifneq ($(KERNELRELEASE),)
