@@ -13,7 +13,6 @@ static int __init main_init(void)
 	return reg;
 }
 
-
 static void __exit main_exit(void)
 {
 	printk("Shutting down Randomizer...\n");

@@ -127,20 +127,16 @@ bool test_randomizer(int size, std::string file_name, bool del)
 
         std::cout << "\nPrinting time results: " << std::endl;
         std::cout << "TEST: randomizer" << std::endl;
-        std::string randomTest = " time head -c " + temp_size_str + " /dev/randomizer > /dev/null";
-        std::cout << randomTest << std::endl;
-
-        system(randomTest.c_str());
-
+        std::string randomizerTest = " time head -c " + temp_size_str + " /dev/randomizer > /dev/null";
+        system(randomizerTest.c_str());
         std::cout << std::endl;
 
         std::cout << "\nPrinting time results: " << std::endl;
         std::cout << "TEST: urandom" << std::endl;
         std::string urandomTest = " time head -c " + temp_size_str + " /dev/urandom > /dev/null";
-
         system(urandomTest.c_str());
-
         std::cout << std::endl;
+
     }
     return isGood;
 }
