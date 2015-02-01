@@ -65,7 +65,6 @@ int main()
 */
 bool test_randomizer(int size, std::string file_name, bool del)
 {
-
     bool isGood;
 
     if(file_exists(file_name))
@@ -83,6 +82,7 @@ bool test_randomizer(int size, std::string file_name, bool del)
     std::string cmd = "head -c " + temp_size_str + " /dev/randomizer >> " + file_name;
     int code = system(cmd.c_str());
 
+    /** Something went wrong at the console **/
     if(code != 0)
     {
         std::cout << "An error occured: " << code << std::endl;
@@ -103,6 +103,7 @@ bool test_randomizer(int size, std::string file_name, bool del)
             isGood = false;
             return isGood;
         }
+
         std::cout << "Test_Size: ";
         if(size == filesize(file_name.c_str()))
         {
@@ -124,18 +125,21 @@ bool test_randomizer(int size, std::string file_name, bool del)
             }
         }
 
-
         std::cout << "\nPrinting time results: " << std::endl;
         std::cout << "TEST: randomizer" << std::endl;
         std::string randomTest = " time head -c " + temp_size_str + " /dev/randomizer > /dev/null";
         std::cout << randomTest << std::endl;
+
         system(randomTest.c_str());
+
         std::cout << std::endl;
 
         std::cout << "\nPrinting time results: " << std::endl;
         std::cout << "TEST: urandom" << std::endl;
         std::string urandomTest = " time head -c " + temp_size_str + " /dev/urandom > /dev/null";
+
         system(urandomTest.c_str());
+
         std::cout << std::endl;
     }
     return isGood;
