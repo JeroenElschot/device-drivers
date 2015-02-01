@@ -21,7 +21,7 @@ static void __exit main_exit(void)
 }
 
 module_init(main_init);
-module_exit(main_exit);
+module_exit(main_exit); 
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jeroen Elschot & Richard Olthuis");

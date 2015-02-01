@@ -11,8 +11,6 @@ static struct file_operations randomizer_fops;
 
 struct device *randomizer_device;
 
-static struct randomizer_state;
-
 static inline void switch_bytes(u8 *firstByte, u8 *secondByte)
 {
 	u8 switchByte; 
@@ -20,9 +18,6 @@ static inline void switch_bytes(u8 *firstByte, u8 *secondByte)
 	*firstByte = *secondByte;      
 	*secondByte = switchByte;
 }
-
-static void init_rand_state(struct randomizer_state *state, int seedflag);
-
 
 static void init_rand_state(struct randomizer_state *state, int seedflag)
 {
