@@ -13,8 +13,7 @@ struct device *randomizer_device;
 //switches the given bytes
 static inline void switch_bytes(u8 *a, u8 *b)
 {
-	u8 c; 
-	c = *a; 
+	u8 c = *a; 
 	*a = *b;      
 	*b = c;
 }
@@ -57,7 +56,6 @@ static void init_random_state(struct randomizer_state *state, int seedflag)
 static int randomizer_open(struct inode *inode, struct file *filp)
 {
 	struct randomizer_state *state;
-	int number = iminor(inode);
 
 	state = kmalloc(sizeof(struct randomizer_state), GFP_KERNEL);
 	if (!state)
@@ -71,11 +69,7 @@ static int randomizer_open(struct inode *inode, struct file *filp)
 	}
 
 	sema_init(&state->sem, 1);
-
-	if (number == randomizer_minor)
-		init_random_state(state, EXTERNAL_SEED);
-	else
-		init_random_state(state, INTERNAL_SEED);
+	init_random_state(state, INTERNAL_SEED);
 
 	filp->private_data = state;
 
@@ -99,8 +93,7 @@ static ssize_t randomizer_read(struct file *filp, char *buffer, size_t count, lo
 	int dobytes, k;
 	char *localbuffer;
 
-	unsigned int i;
-	unsigned int j;
+	unsigned int i, j;
 	u8 *S;
 
 	if (down_interruptible(&state->sem))
@@ -136,11 +129,9 @@ static ssize_t randomizer_read(struct file *filp, char *buffer, size_t count, lo
 			returnvalue = -EFAULT;
 			break;
 		}
-
 		buffer += dobytes;
 		count -= dobytes;
 	}
-
 	up(&state->sem);
 	return returnvalue;
 }
@@ -179,4 +170,3 @@ int randomizer_init(void)
 	}
 	return 0;
 }
-
