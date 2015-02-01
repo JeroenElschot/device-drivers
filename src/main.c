@@ -1,12 +1,9 @@
-#include <linux/fs.h>
 #include <linux/init.h>
-#include <linux/miscdevice.h>
 #include <linux/module.h>
 #include <asm/uaccess.h>
 #include "randomizer.h"
 
-static int __init
-main_init(void)
+static int __init main_init(void)
 {
 	int reg;
 
@@ -17,8 +14,7 @@ main_init(void)
 }
 
 
-static void __exit
-main_exit(void)
+static void __exit main_exit(void)
 {
 	printk("Shutting down Randomizer...\n");
 	randomizer_exit();
