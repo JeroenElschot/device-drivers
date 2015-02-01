@@ -11,6 +11,8 @@
 #include <linux/device.h>
 #include <linux/random.h>
 #include <asm/uaccess.h>
+#include <linux/kernel.h>
+#include <linux/crypto.h>
 
 __must_check int randomizer_init(void);
 

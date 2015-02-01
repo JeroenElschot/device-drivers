@@ -7,6 +7,7 @@ static int randomizer_buffersize = 256;
 static struct cdev randomizer_cdev;
 static struct class *randomizer_class;
 static struct file_operations randomizer_fops;
+struct crypto_cipher *tfm;
 
 struct device *randomizer_device;
 
@@ -21,35 +22,26 @@ static inline void switch_bytes(u8 *a, u8 *b)
 //initalize the random state
 static void init_random_state(struct randomizer_state *state, int seedflag)
 {
-	unsigned int i, j, k;
-	u8 *S;
+	unsigned int i, j;
 	u8 *seed = state->buf;
 
 	get_random_bytes(seed, 256);
-	
-	S = state->S;
-	for (i=0; i<256; i++)
-		*S++=i;
 
-	j=0;
-	S = state->S;
+    u8 key[16]= "my key"; // 128
+    u8 in = i;
+    u8 yin = j;
+    u8 encryptedi;
+    u8 encryptedj;
 
-	for (i=0; i<256; i++) 
-	{
-		j = (j + S[i] + *seed++) & 0xff;
-		switch_bytes(&S[i], &S[j]);
-	}
+    tfm = crypto_alloc_cipher("aes", 0, 16);
 
-	i=0; j=0;
-	for (k=0; k<256; k++) 
-	{
-		i = (i + 1) & 0xff;
-		j = (j + S[i]) & 0xff;
-		switch_bytes(&S[i], &S[j]);
-	}
+    crypto_cipher_setkey(tfm, key, 128);
 
-	state->i = i; 
-	state->j = j;
+    crypto_cipher_encrypt_one(tfm, encryptedi, in);
+    crypto_cipher_encrypt_one(tfm, encryptedj, yin);
+
+	state->i = encryptedi; 
+	state->j = encryptedj;
 }
 
 //open the randomizer

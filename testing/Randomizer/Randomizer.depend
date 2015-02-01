@@ -1,0 +1,12 @@
+# depslib dependency file v1.0
+1422817886 source:/home/richardolt/Documents/device-drivers/testing/Randomizer/main.cpp
+	<iostream>
+	<sstream>
+	<cstdlib>
+	<stdio.h>
+	<fstream>
+	<string.h>
+	<sstream>
+	<sys/stat.h>
+	<unistd.h>
+
