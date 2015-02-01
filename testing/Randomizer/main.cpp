@@ -18,8 +18,8 @@ int main()
     std::cout << "====================================\n" << std::endl;
     std::cout << "Starting tests given the input\n" << std::endl;
 
-    /** 16bytes **/
-    if(test_randomizer(256,"testfile1.txt", false))
+    /** 500 MB **/
+    if(test_randomizer(524288000,"testfile1.txt", true))
     {
         std::cout << "All tests passed for testfile1.txt" << std::endl;
         std::cout << "====================================\n" << std::endl;
@@ -28,10 +28,11 @@ int main()
     {
         std::cout << "Testing for file testfile1.txt failed" << std::endl;
         std::cout << "====================================\n" << std::endl;
+
     }
 
-    /** 500 MB **/
-    /*if(test_randomizer(524288000,"testfile2.txt", true))
+    /** 100MB **/
+    if(test_randomizer(104857600,"testfile2.txt", true))
     {
         std::cout << "All tests passed for testfile2.txt" << std::endl;
         std::cout << "====================================\n" << std::endl;
@@ -42,10 +43,10 @@ int main()
         std::cout << "====================================\n" << std::endl;
     }
 
-    /** 100MB **/
-    /*if(test_randomizer(104857600,"testfile3.txt", true))
+    /** 50MB **/
+    if(test_randomizer(10485760,"testfile3.txt", true))
     {
-        std::cout << "All tests passed for testfile3.txt" << std::endl;
+        std::cout << "All tests passed for testfile4.txt" << std::endl;
         std::cout << "====================================\n" << std::endl;
     }
     else
@@ -53,20 +54,6 @@ int main()
         std::cout << "Testing for file testfile3.txt failed" << std::endl;
         std::cout << "====================================\n" << std::endl;
     }
-
-    /** 50MB **/
-    /*if(test_randomizer(10485760,"testfile4.txt", true))
-    {
-        std::cout << "All tests passed for testfile4.txt" << std::endl;
-        std::cout << "====================================\n" << std::endl;
-    }
-    else
-    {
-        std::cout << "Testing for file testfile4.txt failed" << std::endl;
-        std::cout << "====================================\n" << std::endl;
-    }
-
-    */
 
     return 0;
 }
