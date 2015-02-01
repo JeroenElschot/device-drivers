@@ -1,145 +1,30 @@
 #include "randomizer.h"
+#include <linux/kernel.h>
+#include <linux/crypto.h>
 
-static int randomizer_major = 235;
-static int randomizer_minor = 11;
+static int major_number = 235;
+static int minor_number = 11;
 static int randomizer_buffersize = 256;
 
 static struct cdev randomizer_cdev;
 static struct class *randomizer_class;
 static struct file_operations randomizer_fops;
-struct crypto_cipher *tfm;
 
 struct device *randomizer_device;
+struct crypto_cipher *cry_cip;
 
-//switches the given bytes
-static inline void switch_bytes(u8 *a, u8 *b)
-{
-	u8 c = *a; 
-	*a = *b;      
-	*b = c;
-}
+//things to remember!!
+//		declarations in the top of each method
+//		printk to print a line to the log for debugging
 
-//initalize the random state
-static void init_random_state(struct randomizer_state *state, int seedflag)
-{
-	unsigned int i, j;
-	u8 *seed = state->buf;
-
-	get_random_bytes(seed, 256);
-
-    u8 key[16]= "my key"; // 128
-    u8 in = i;
-    u8 yin = j;
-    u8 encryptedi;
-    u8 encryptedj;
-
-    tfm = crypto_alloc_cipher("aes", 0, 16);
-
-    crypto_cipher_setkey(tfm, key, 128);
-
-    crypto_cipher_encrypt_one(tfm, encryptedi, in);
-    crypto_cipher_encrypt_one(tfm, encryptedj, yin);
-
-	state->i = encryptedi; 
-	state->j = encryptedj;
-}
-
-//open the randomizer
-static int randomizer_open(struct inode *inode, struct file *filp)
-{
-	struct randomizer_state *state;
-
-	state = kmalloc(sizeof(struct randomizer_state), GFP_KERNEL);
-	if (!state)
-		return -ENOMEM;
-
-	state->buf = kmalloc(randomizer_buffersize, GFP_KERNEL);
-	if (!state->buf) 
-	{
-		kfree(state);
-		return -ENOMEM;
-	}
-
-	sema_init(&state->sem, 1);
-	init_random_state(state, INTERNAL_SEED);
-
-	filp->private_data = state;
-
-	return 0;
-}
-
-//release the randomizer
-static int randomizer_release(struct inode *inode, struct file *filp)
-{
-	struct randomizer_state *state = filp->private_data;
-	kfree(state->buf);
-	kfree(state);
-	return 0;
-}
-
-//read the given buffer
-static ssize_t randomizer_read(struct file *filp, char *buffer, size_t count, loff_t *f_pos)
-{
-	struct randomizer_state *state = filp->private_data;
-	ssize_t returnvalue;
-	int dobytes, k;
-	char *localbuffer;
-
-	unsigned int i, j;
-	u8 *S;
-
-	if (down_interruptible(&state->sem))
-		return -ERESTARTSYS;
-
-	returnvalue = count;
-
-	i = state->i;     
-	j = state->j;
-	S = state->S;  
-
-	while (count) 
-	{
-		if (count > randomizer_buffersize)
-			dobytes = randomizer_buffersize;
-		else
-			dobytes = count;
-
-		localbuffer = state->buf;
-
-		for (k=0; k<dobytes; k++)
-		{
-			i = (i + 1) & 0xff;
-			j = (j + S[i]) & 0xff;
-			switch_bytes(&S[i], &S[j]);
-			*localbuffer++ = S[(S[i] + S[j]) & 0xff];
-		}
-
-		if (copy_to_user(buffer, state->buf, dobytes)) 
-		{
-			state->i = i;     
-			state->j = j;
-			returnvalue = -EFAULT;
-			break;
-		}
-		buffer += dobytes;
-		count -= dobytes;
-	}
-	up(&state->sem);
-	return returnvalue;
-}
-
-static struct file_operations randomizer_fops = {
-	read:       randomizer_read,
-	open:       randomizer_open,
-	release:    randomizer_release,
-};
+static inline void switch_bytes(u8 *a, u8 *b);
 
 //exit the device, destroy the randomizer
 void randomizer_exit(void) 
 {
-	unregister_chrdev_region(MKDEV(randomizer_major, randomizer_minor), 1);
+	unregister_chrdev_region(MKDEV(major_number, minor_number), 1);
 	cdev_del(&randomizer_cdev);
-	device_destroy(randomizer_class, MKDEV(randomizer_major, randomizer_minor));
+	device_destroy(randomizer_class, MKDEV(major_number, minor_number));
 	class_destroy(randomizer_class);
 }
 
@@ -150,10 +35,10 @@ int randomizer_init(void)
 	randomizer_class = class_create(THIS_MODULE, "random");
 	cdev_init(&randomizer_cdev, &randomizer_fops);
 	randomizer_cdev.owner = THIS_MODULE;
-	result = cdev_add(&randomizer_cdev, MKDEV(randomizer_major, randomizer_minor), 1);
-	result = register_chrdev_region(MKDEV(randomizer_major, randomizer_minor), 1, "/dev/randomizer");
+	result = cdev_add(&randomizer_cdev, MKDEV(major_number, minor_number), 1);
+	result = register_chrdev_region(MKDEV(major_number, minor_number), 1, "/dev/randomizer");
 
-	randomizer_device = device_create(randomizer_class, NULL, MKDEV(randomizer_major, randomizer_minor), NULL, "randomizer");
+	randomizer_device = device_create(randomizer_class, NULL, MKDEV(major_number, minor_number), NULL, "randomizer");
 	
 	if(result != 0)
 	{
@@ -162,3 +47,151 @@ int randomizer_init(void)
 	}
 	return 0;
 }
+
+
+
+//initalize the random state
+static void init_random_state(struct randomizer_state *state)
+{
+	unsigned int i, j, k;
+	u8 *S;
+	u8 *seed = state->buffer;
+
+	get_random_bytes(seed, 256);
+	
+	S = state->S;
+	for (i=0; i<256; i++)
+		*S++=i;
+
+	j=0;
+	S = state->S;
+
+	for (i=0; i<256; i++) 
+	{
+		j = (j + S[i] + *seed++) & 0xff;
+		switch_bytes(&S[i], &S[j]);
+	}
+
+	i=0; j=0;
+	for (k=0; k<256; k++) 
+	{
+		i = (i + 1) & 0xff;
+		j = (j + S[i]) & 0xff;
+		switch_bytes(&S[i], &S[j]);
+	}
+
+	state->i = i;
+	state->j = j;
+}
+
+//open the randomizer
+static int randomizer_open(struct inode *inode, struct file *f)
+{
+	int k = 0;
+	struct randomizer_state *state;
+	u8 key[128] = "NxccCfpaiq6venmlkhglyP078tHdKxLbj4gD5r5LftGGhd7keNi2RrcRJCM9bPC";
+	u8 *state_to_encrypt;
+	u8 encrypted[256];
+
+	state = kmalloc(sizeof(struct randomizer_state), GFP_KERNEL);
+	if (!state)
+		return -ENOMEM;
+
+	state->buffer = kmalloc(randomizer_buffersize, GFP_KERNEL);
+	if (!state->buffer) 
+	{
+		kfree(state);
+		return -ENOMEM;
+	}
+
+	sema_init(&state->sem, 1);
+	init_random_state(state);
+
+	state_to_encrypt = state->S;
+	cry_cip = crypto_alloc_cipher("aes", 0, 128);
+
+    crypto_cipher_setkey(cry_cip, key, 128);
+    crypto_cipher_encrypt_one(cry_cip, encrypted, state_to_encrypt);
+
+    for(k = 0; k < 256; k++)
+    	state->S[k] = encrypted[k];
+
+	f->private_data = state;
+
+	return 0;
+}
+
+//read the given buffer
+static ssize_t randomizer_read(struct file *f, char *buffer, size_t count, loff_t *f_pos)
+{
+	struct randomizer_state *state = f->private_data;
+	ssize_t returnvalue;
+	unsigned int i, j;
+	int k, l;
+	char *localbuffer;
+	u8 *S;
+
+	if (down_interruptible(&state->sem))
+		return -ERESTARTSYS;
+
+	returnvalue = count;
+
+	i = state->i;
+	j = state->j;
+	S = state->S;
+
+	while (count)
+	{
+		if (count > randomizer_buffersize)
+			l = randomizer_buffersize; // set the bytes to work with to the size of the buffer
+		else
+			l = count; // if count lower than buffersize, set l to the remaining count
+
+		localbuffer = state->buffer;
+
+		for (k=0; k<l; k++)
+		{
+			i = (i + 1) & 0xff;
+			j = (j + S[i]) & 0xff;
+			switch_bytes(&S[i], &S[j]);
+			*localbuffer++ = S[(S[i] + S[j]) & 0xff];
+		}
+
+		if (copy_to_user(buffer, state->buffer, l)) 
+		{
+			state->i = i;     
+			state->j = j;
+			returnvalue = -EFAULT;
+			break;
+		}
+		buffer += l;
+		count -= l; // lower the count , eventualy it reaches 0 and the while loop is over
+	}
+	up(&state->sem);
+	return returnvalue;
+}
+
+//release the randomizer
+static int randomizer_release(struct inode *inode, struct file *f)
+{
+	struct randomizer_state *state = f->private_data;
+	kfree(state->buffer);
+	kfree(state);
+	return 0;
+}
+
+static struct file_operations randomizer_fops = {
+	read:       randomizer_read,
+	open:       randomizer_open,
+	release:    randomizer_release,
+};
+
+//switches the given bytes
+static inline void switch_bytes(u8 *a, u8 *b)
+{
+	u8 c = *a; 
+	*a = *b;
+	*b = c;
+}
+
+

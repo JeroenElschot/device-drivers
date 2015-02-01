@@ -1,9 +1,6 @@
 #ifndef RANDOMIZER_H_
 #define RANDOMIZER_H_
 
-#define INTERNAL_SEED 0
-#define EXTERNAL_SEED 1
-
 #include <linux/compiler.h> 
 #include <linux/slab.h> 
 #include <linux/fs.h> 
@@ -24,7 +21,7 @@ struct randomizer_state
 	u8 S[256];
 	u8 i;        
 	u8 j;
-	char *buf;
+	char *buffer;
 };
 
 #endif //RANDOMIZER_H_
